@@ -72,7 +72,7 @@ export function activate(context: vscode.ExtensionContext) {
             let cmds = j.getCommands();
             if (0 === cmds.length) { continue; }
             commands = commands.concat(j.getCommands());
-            commands.push({label: '$(dash)'.repeat(70), description: ''});
+            commands.push({label: '$(grabber)'.repeat(4), description: ''});
         }
 
         // Add in host selection command
