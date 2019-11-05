@@ -14,6 +14,7 @@ import { NodeJack } from './nodeJack';
 import { JobJack } from './jobJack';
 // import { sleep } from './utils';
 import { OutputPanelProvider } from './outputProvider';
+import { PipelineJobTreeProvider, PipelineJob } from './pipelineJobTree';
 
 export function activate(context: vscode.ExtensionContext) {
 
@@ -51,6 +52,9 @@ export function activate(context: vscode.ExtensionContext) {
     });
     context.subscriptions.push(snippetsDisposable);
 
+    const pipelineJobTreeProvider = new PipelineJobTreeProvider();
+    vscode.window.registerTreeDataProvider('pipelineJobTree', pipelineJobTreeProvider);
+
     // Initialize the Jacks and their respective commands.
     let jacks: Jack[] = [];
     jacks.push(registerJack(new PipelineJack(),        'extension.jenkins-jack.pipeline',      context));
@@ -61,10 +65,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider(OutputPanelProvider.scheme(), OutputPanelProvider.instance()));
 	let jacksCommands = vscode.commands.registerCommand('extension.jenkins-jack.jacks', async () => {
-        // let messageItem: vscode.MessageItem = {
-        //     title: 'Okay',
 
-        // };
 
         // Build up command list from all the Jacks.
         let commands: any[] = [];
