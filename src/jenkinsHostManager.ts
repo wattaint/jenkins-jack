@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { JenkinsService } from './jenkinsService';
+import { PipelineJobTreeProvider } from './pipelineJobTree';
 
 export class JenkinsHostManager {
     private host: JenkinsService;
@@ -17,15 +18,15 @@ export class JenkinsHostManager {
         });
     }
 
-    public static instance(): JenkinsHostManager {
+    public static get instance(): JenkinsHostManager {
         if (undefined === JenkinsHostManager.jsmInstance) {
           JenkinsHostManager.jsmInstance = new JenkinsHostManager();
         }
         return JenkinsHostManager.jsmInstance;
     }
 
-    public static host(): JenkinsService {
-        return JenkinsHostManager.instance().host;
+    public static get host(): JenkinsService {
+        return JenkinsHostManager.instance.host;
     }
 
     /**
@@ -75,6 +76,10 @@ export class JenkinsHostManager {
                 result.target.username === c.username &&
                 result.target.password === c.password);
         }
+
+        // Update our job view with the new host's pipeline jobs
+        PipelineJobTreeProvider.instance.refresh();
+
         vscode.workspace.getConfiguration().update('jenkins-jack.jenkins.connections', config.connections, vscode.ConfigurationTarget.Global);
         vscode.window.showInformationMessage(`Jenkins Jack: Host updated to ${result.target.uri}`);
     }

@@ -33,7 +33,7 @@ export class SharedLibApiManager {
         this.sharedLibVars = [];
     }
 
-    public static instance() {
+    public static get instance() {
         if (undefined === SharedLibApiManager.sharedLibInstance) {
             SharedLibApiManager.sharedLibInstance = new SharedLibApiManager();
         }
@@ -49,7 +49,7 @@ export class SharedLibApiManager {
         let url = undefined !== job ?   `job/${job.fullName}/pipeline-syntax/globals` :
                                         'pipeline-syntax/globals';
 
-        let html: string = await JenkinsHostManager.host().get(url);
+        let html: string = await JenkinsHostManager.host.get(url);
         if (undefined === html) { return; }
 
         this.sharedLibVars = this.parseHtml(html);

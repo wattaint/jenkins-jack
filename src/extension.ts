@@ -14,7 +14,7 @@ import { NodeJack } from './nodeJack';
 import { JobJack } from './jobJack';
 // import { sleep } from './utils';
 import { OutputPanelProvider } from './outputProvider';
-import { PipelineJobTreeProvider, PipelineJob } from './pipelineJobTree';
+import { PipelineJobTreeProvider } from './pipelineJobTree';
 
 export function activate(context: vscode.ExtensionContext) {
 
@@ -37,7 +37,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     // We initialize the Jenkins service first in order to avoid
     // a race condition during onDidChangeConfiguration
-    JenkinsHostManager.instance();
+    JenkinsHostManager.instance;
 
     // Register Pipeline snippet definitions.
     var pipelineSnippets = new PipelineSnippets();
@@ -52,8 +52,7 @@ export function activate(context: vscode.ExtensionContext) {
     });
     context.subscriptions.push(snippetsDisposable);
 
-    const pipelineJobTreeProvider = new PipelineJobTreeProvider();
-    vscode.window.registerTreeDataProvider('pipelineJobTree', pipelineJobTreeProvider);
+    vscode.window.registerTreeDataProvider('pipelineJobTree', PipelineJobTreeProvider.instance);
 
     // Initialize the Jacks and their respective commands.
     let jacks: Jack[] = [];
@@ -63,7 +62,7 @@ export function activate(context: vscode.ExtensionContext) {
     jacks.push(registerJack(new BuildJack(),           'extension.jenkins-jack.build',         context));
     jacks.push(registerJack(new JobJack(),             'extension.jenkins-jack.job',           context));
 
-    context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider(OutputPanelProvider.scheme(), OutputPanelProvider.instance()));
+    context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider(OutputPanelProvider.scheme(), OutputPanelProvider.instance));
 	let jacksCommands = vscode.commands.registerCommand('extension.jenkins-jack.jacks', async () => {
 
 
@@ -81,7 +80,7 @@ export function activate(context: vscode.ExtensionContext) {
         commands.push({
             label: "$(settings)  Host Selection",
             description: "Select a jenkins host to connect to.",
-            target: async () => await JenkinsHostManager.instance().selectConnection()
+            target: async () => await JenkinsHostManager.instance.selectConnection()
         })
 
         // Display full list of all commands and execute selected target.
