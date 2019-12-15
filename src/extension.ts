@@ -52,22 +52,22 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(snippetsDisposable);
 
     // Initialize the Jacks and their respective commands.
-    let commandSetList: CommandSet[] = [];
-    commandSetList.push(registerCommandSet(new PipelineJack(),              'extension.jenkins-jack.pipeline',      context));
-    commandSetList.push(registerCommandSet(new ScriptConsoleJack(),         'extension.jenkins-jack.scriptConsole', context));
-    commandSetList.push(registerCommandSet(new NodeJack(),                  'extension.jenkins-jack.node',          context));
-    commandSetList.push(registerCommandSet(new BuildJack(),                 'extension.jenkins-jack.build',         context));
-    commandSetList.push(registerCommandSet(new JobJack(),                   'extension.jenkins-jack.job',           context));
+    let commandSets: CommandSet[] = [];
+    commandSets.push(registerCommandSet(new PipelineJack(),              'extension.jenkins-jack.pipeline',      context));
+    commandSets.push(registerCommandSet(new ScriptConsoleJack(),         'extension.jenkins-jack.scriptConsole', context));
+    commandSets.push(registerCommandSet(new NodeJack(),                  'extension.jenkins-jack.node',          context));
+    commandSets.push(registerCommandSet(new BuildJack(),                 'extension.jenkins-jack.build',         context));
+    commandSets.push(registerCommandSet(new JobJack(),                   'extension.jenkins-jack.job',           context));
 
     // Grab host selection command
-    commandSetList.push(registerCommandSet(JenkinsHostManager.instance(),   'extension.jenkins-jack.connections',    context));
+    commandSets.push(registerCommandSet(JenkinsHostManager.instance(),   'extension.jenkins-jack.connections',    context));
 
     context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider(OutputPanelProvider.scheme(), OutputPanelProvider.instance()));
 	let jacksCommands = vscode.commands.registerCommand('extension.jenkins-jack.jacks', async () => {
 
         // Build up command list
         let selections: any[] = [];
-        for (let c of commandSetList) {
+        for (let c of commandSets) {
             let cmds = c.commands();
             if (0 === cmds.length) { continue; }
             selections = selections.concat(cmds);

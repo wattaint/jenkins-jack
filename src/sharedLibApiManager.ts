@@ -74,6 +74,8 @@ export class SharedLibApiManager {
             let html = child.next('dd').find('div').first().html();
             if (null === descr || null === html) { continue; }
 
+            if (undefined === name) { name = 'undefined'; }
+
             // Add shared var name as title to the content.
             html = `<div id='outer' markdown='1'><h2>${name}</h2>${html}</div>`;
             if (!sharedLibVars.some((slv: SharedLibVar) => slv.label === name)) {
