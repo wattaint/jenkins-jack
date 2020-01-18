@@ -1,3 +1,4 @@
+import * as _ from 'lodash';
 import * as vscode from 'vscode';
 import * as xml2js from "xml2js";
 import * as util from 'util';
@@ -73,6 +74,7 @@ export class PipelineJack extends JackBase {
 
     // @ts-ignore
     private async executePipeline() {
+        console.log('- executePipeline -')
         let editor = vscode.window.activeTextEditor;
         if (undefined === editor) { return; }
 
@@ -85,10 +87,11 @@ export class PipelineJack extends JackBase {
 
         let groovyScriptPath = editor.document.uri.fsPath;
         let config = new PipelineConfig(groovyScriptPath);
-
+        console.log('- executePipeline - config ', config)
         // Grab filename to use as the Jenkins job name.
-        var jobName = path.parse(path.basename(editor.document.fileName)).name;
-
+        //var jobName = path.parse(path.basename(editor.document.fileName)).name;
+        var jobName = config.name
+        console.log('- executePipeline - jobName ', jobName)
         // Grab source from active editor.
         let source = editor.document.getText();
         if ("" === source) { return; }
@@ -197,8 +200,14 @@ export class PipelineJack extends JackBase {
             if (undefined === r) { return undefined; }
 
             console.log(`${jobName} doesn't exist. Creating...`);
-            await JenkinsHostManager.host().client.job.create(jobName, xml);
-            job = await JenkinsHostManager.host().getJob(jobName);
+            try {
+                await JenkinsHostManager.host().client.job.create(jobName, xml);
+                job = await JenkinsHostManager.host().getJob(jobName);    
+            } catch (error) {
+                console.error(error)
+                throw error
+            }
+            
         }
         else {
             console.log(`${jobName} already exists. Updating...`);
@@ -386,10 +395,21 @@ export class PipelineJack extends JackBase {
 
             progress.report({ increment: 20, message: `Building "${jobName}" #${buildNum}` });
             let buildOptions = params !== undefined ? { name: jobName, parameters: params } : { name: jobName };
-            await JenkinsHostManager.host().client.job.build(buildOptions).catch((err: any) => {
-                console.log(err);
-                throw err;
-            });
+            console.log('--- buildparams ---', params)
+            if (_.isEmpty(params)) {
+                buildOptions = { name: jobName }
+            }
+            
+            console.log('--- buildOptions ---', buildOptions)
+            try {
+                await JenkinsHostManager.host().client.job.build(buildOptions).catch((err: any) => {
+                    console.log(err);
+                    throw err;
+                });
+            } catch (err1) {
+                throw err1;
+            }
+            
             if (token.isCancellationRequested) { return undefined;  }
 
             progress.report({ increment: 30, message: 'Waiting for build to be ready...' });

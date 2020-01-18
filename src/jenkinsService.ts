@@ -32,7 +32,7 @@ export class JenkinsService {
 
         console.log(`Using the following URI for Jenkins client: ${this._jenkinsUri}`);
         
-        if (password.startsWith('Basic')) {
+        if (password.toString().toLowerCase().startsWith('basic')) {
             this.useBasicAuth = password;
             this._jenkinsUri = `${protocol}://${host}`;
             this.client = jenkins({
@@ -88,7 +88,7 @@ export class JenkinsService {
      */
     public async get(endpoint: string) {
         let url = `${this._jenkinsUri}/${endpoint}`;
-        if (this.useBasicAuth.startsWith('Basic')) {
+        if (this.useBasicAuth.toString().toLowerCase().startsWith('basic')) {
             return request.get({
                 uri: url,
                 headers: {
