@@ -37,7 +37,10 @@
           "jenkins-jack.outputView.type": {
             "type": "string",
             "default": "channel",
-            "enum": ["channel", "panel"],
+            "enum": [
+              "channel",
+              "panel"
+            ],
             "enumDescriptions": [
               "Output is streamed to the OUTPUT channel provided by vscode.",
               "Streams output to a read-only editor window."

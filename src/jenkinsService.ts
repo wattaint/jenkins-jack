@@ -12,10 +12,12 @@ export class JenkinsService {
 
     private _config: any;
     private _jenkinsUri: string;
+    private useBasicAuth: string;
     private readonly _cantConnectMessage = 'Jenkins Jack: Could not connect to the remote Jenkins';
     private _disposed = false;
 
     public constructor(name: string, uri: string, username: string, password: string) {
+        this.useBasicAuth = '';
         this.name = name;
 
         let protocol = 'http';
@@ -26,15 +28,29 @@ export class JenkinsService {
             protocol = match[1];
             host = match[2];
         }
+        
 
-        this._jenkinsUri = `${protocol}://${username}:${password}@${host}`;
         console.log(`Using the following URI for Jenkins client: ${this._jenkinsUri}`);
-
-        this.client = jenkins({
-            baseUrl: this._jenkinsUri,
-            crumbIssuer: false,
-            promisify: true
-        });
+        
+        if (password.startsWith('Basic')) {
+            this.useBasicAuth = password;
+            this._jenkinsUri = `${protocol}://${host}`;
+            this.client = jenkins({
+                baseUrl: this._jenkinsUri,
+                crumbIssuer: false,
+                promisify: true,
+                headers: {
+                    'Authorization': password,
+                },
+            });
+        } else {
+            this._jenkinsUri = `${protocol}://${username}:${password}@${host}`;
+            this.client = jenkins({
+                baseUrl: this._jenkinsUri,
+                crumbIssuer: false,
+                promisify: true,
+            });
+        }
 
         this.updateSettings();
 
@@ -57,7 +73,7 @@ export class JenkinsService {
         // Will error if no connection can be made to the remote host
         this.client.info().catch((err: any) => {
             if (this._disposed) { return; }
-            vscode.window.showWarningMessage(this._cantConnectMessage);
+            vscode.window.showWarningMessage('-1-' + this._cantConnectMessage);
         });
     }
 
@@ -72,11 +88,25 @@ export class JenkinsService {
      */
     public async get(endpoint: string) {
         let url = `${this._jenkinsUri}/${endpoint}`;
-        return request.get(url).catch(err => {
-            console.log(err);
-            vscode.window.showWarningMessage(this._cantConnectMessage);
-            return undefined;
-        });
+        if (this.useBasicAuth.startsWith('Basic')) {
+            return request.get({
+                uri: url,
+                headers: {
+                    Authorization: this.useBasicAuth,
+                }
+            }).catch(err => {
+                console.log(err);
+                vscode.window.showWarningMessage('-2.1-' + url + ' : ' + this._cantConnectMessage);
+                return undefined;
+            });
+
+        } else {
+            return request.get(url).catch(err => {
+                console.log(err);
+                vscode.window.showWarningMessage('-2-' + url + ' : ' + this._cantConnectMessage);
+                return undefined;
+            });
+        }
     }
 
     /**
@@ -91,7 +121,7 @@ export class JenkinsService {
                 return undefined;
             }
             console.log(err);
-            vscode.window.showWarningMessage(this._cantConnectMessage);
+            vscode.window.showWarningMessage('-3-' + this._cantConnectMessage);
             throw err;
         });
     }
@@ -179,7 +209,7 @@ export class JenkinsService {
             });
         } catch (err) {
             console.log(err);
-            vscode.window.showWarningMessage(this._cantConnectMessage);
+            vscode.window.showWarningMessage('-4-' + this._cantConnectMessage);
             return undefined;
         }
     }
@@ -199,7 +229,7 @@ export class JenkinsService {
                 return `${jobName} #${buildNumber} deleted`
             }
             console.log(err);
-            vscode.window.showWarningMessage(this._cantConnectMessage);
+            vscode.window.showWarningMessage('-5-' + this._cantConnectMessage);
             return undefined;
         }
     }
@@ -218,7 +248,7 @@ export class JenkinsService {
             return json.jobs;
         } catch (err) {
             console.log(err);
-            vscode.window.showWarningMessage(this._cantConnectMessage);
+            vscode.window.showWarningMessage('-6-' + this._cantConnectMessage);
             return undefined;
         }
     }
@@ -249,7 +279,7 @@ export class JenkinsService {
             return output;
         } catch (err) {
             console.log(err);
-            vscode.window.showWarningMessage(this._cantConnectMessage);
+            vscode.window.showWarningMessage('-7-' + this._cantConnectMessage);
             return err.error;
         }
     }
