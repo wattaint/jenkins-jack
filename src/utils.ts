@@ -14,9 +14,12 @@ export async function sleep(ms: number) {
 }
 
 export function isGroovy() {
+    let retVal = false
     var editor = vscode.window.activeTextEditor;
     if (!editor) { return false; }
-    return "groovy" === editor.document.languageId;
+    // retVal = ("groovy" === editor.document.languageId);
+    retVal = ['groovy', 'json'].includes(editor.document.languageId);
+    return retVal
 }
 
 export async function showQuicPick(items: any[], ): Promise<void> {

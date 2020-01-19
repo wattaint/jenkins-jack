@@ -74,7 +74,6 @@ export class PipelineJack extends JackBase {
 
     // @ts-ignore
     private async executePipeline() {
-        console.log('- executePipeline -')
         let editor = vscode.window.activeTextEditor;
         if (undefined === editor) { return; }
 
@@ -86,14 +85,19 @@ export class PipelineJack extends JackBase {
         }
 
         let groovyScriptPath = editor.document.uri.fsPath;
+        const isConfig = groovyScriptPath.match(/^.*\/\.(.*).config.json$/)
+        if (isConfig) {
+            const scriptName = isConfig[1];
+            groovyScriptPath =  path.join(path.dirname(groovyScriptPath), `${scriptName}.groovy`)
+        }
         let config = new PipelineConfig(groovyScriptPath);
-        console.log('- executePipeline - config ', config)
         // Grab filename to use as the Jenkins job name.
         //var jobName = path.parse(path.basename(editor.document.fileName)).name;
         var jobName = config.name
-        console.log('- executePipeline - jobName ', jobName)
         // Grab source from active editor.
-        let source = editor.document.getText();
+        //let source = editor.document.getText();
+        let source = fs.readFileSync(groovyScriptPath).toString()
+        
         if ("" === source) { return; }
 
         // Build the pipeline.
@@ -133,6 +137,7 @@ export class PipelineJack extends JackBase {
 
         // Grab source from active editor.
         let source = editor.document.getText();
+        console.log('getsource--1---')
         if ("" === source) { return; }
 
         await this.update(source, jobName);
@@ -259,9 +264,8 @@ export class PipelineJack extends JackBase {
         job: any,
         config: PipelineConfig,
         progress: vscode.Progress<{ message?: string | undefined; increment?: number | undefined; }>): Promise<any> {
-
+        
         let params = config.params;
-
         // Validate job has parameters.
         let paramProperty = job.property.find((p: any) => p._class === "hudson.model.ParametersDefinitionProperty");
         if (undefined === paramProperty) { return undefined; }
@@ -287,7 +291,7 @@ export class PipelineJack extends JackBase {
                 paramsJson[key] = params[key] !== null ? params[key] : '';
             }
         }
-
+        
         // If interactive input is specified, use remote job's build parameters
         // to display input boxes, lists, etc. (quick picks, input boxes, boolean check thinger)
         // for the user to fill values in (updates config param values)
@@ -379,7 +383,8 @@ export class PipelineJack extends JackBase {
 
             progress.report({ increment: 20, message: `Waiting on build paramter input...` });
             let params = {};
-            if (this.config.params.enabled) {
+
+            if (!_.isEmpty(config.params) || this.config.params.enabled) {
                 try {
                     params = await this.buildParameterInput(currentJob, config, progress);
                     if (undefined !== params) {
@@ -395,12 +400,10 @@ export class PipelineJack extends JackBase {
 
             progress.report({ increment: 20, message: `Building "${jobName}" #${buildNum}` });
             let buildOptions = params !== undefined ? { name: jobName, parameters: params } : { name: jobName };
-            console.log('--- buildparams ---', params)
             if (_.isEmpty(params)) {
                 buildOptions = { name: jobName }
             }
             
-            console.log('--- buildOptions ---', buildOptions)
             try {
                 await JenkinsHostManager.host().client.job.build(buildOptions).catch((err: any) => {
                     console.log(err);

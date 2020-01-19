@@ -96,7 +96,7 @@ export class JenkinsService {
                 }
             }).catch(err => {
                 console.log(err);
-                vscode.window.showWarningMessage('-2.1-' + url + ' : ' + this._cantConnectMessage);
+                vscode.window.showWarningMessage(this._cantConnectMessage);
                 return undefined;
             });
 
@@ -186,7 +186,19 @@ export class JenkinsService {
         try {
             rootUrl = this.fromUrlFormat(rootUrl);
             let url = `${rootUrl}/api/json?tree=builds[number,result,description]`;
-            let r = await request.get(url);
+
+            let r
+            if (this.useBasicAuth.toString().toLowerCase().startsWith('basic')) {
+                r = await request.get({
+                    uri: url,
+                    headers: {
+                        Authorization: this.useBasicAuth,
+                    }
+                })
+            } else {
+                r = await request.get(url)
+            }
+
             let json = JSON.parse(r);
             return json.builds.map((n: any) => {
                 let buildStatus = "";
@@ -243,7 +255,17 @@ export class JenkinsService {
             rootUrl = rootUrl === undefined ? this._jenkinsUri : rootUrl;
             rootUrl = this.fromUrlFormat(rootUrl);
             let url = `${rootUrl}/api/json?tree=jobs[fullName,url,buildable,jobs[fullName,url,buildable,jobs[fullName,url,buildable]]]`;
-            let r = await request.get(url);
+            let r
+            if (this.useBasicAuth.toString().toLowerCase().startsWith('basic')) {
+                r = await request.get({
+                    uri: url,
+                    headers: {
+                        Authorization: this.useBasicAuth,
+                    }
+                })
+            } else {
+                r = await request.get(url)
+            }
             let json = JSON.parse(r);
             return json.jobs;
         } catch (err) {
