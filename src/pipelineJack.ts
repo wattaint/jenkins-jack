@@ -124,7 +124,7 @@ export class PipelineJack extends JackBase {
     }
 
     // @ts-ignore
-    private async updatePipeline() {
+    private async updatePipeline_ori() {
         // Validate it's valid groovy source.
         var editor = vscode.window.activeTextEditor;
         if (!editor) { return; }
@@ -137,7 +137,38 @@ export class PipelineJack extends JackBase {
 
         // Grab source from active editor.
         let source = editor.document.getText();
-        console.log('getsource--1---')
+        if ("" === source) { return; }
+
+        await this.update(source, jobName);
+    }
+
+    // @ts-ignore
+    private async updatePipeline() {
+        // Validate it's valid groovy source.
+        var editor = vscode.window.activeTextEditor;
+        if (!editor) { return; }
+        if (!["groovy", 'json'].includes(editor.document.languageId)) {
+            return;
+        }
+
+        // Grab filename to use as (part of) the Jenkins job name.
+        let groovyScriptPath = editor.document.uri.fsPath;
+        const isConfig = groovyScriptPath.match(/^.*\/\.(.*).config.json$/)
+        if (isConfig) {
+            const scriptName = isConfig[1];
+            groovyScriptPath =  path.join(path.dirname(groovyScriptPath), `${scriptName}.groovy`)
+        }
+        let source = fs.readFileSync(groovyScriptPath).toString()
+
+        let configJson = {name: ''}
+        if (isConfig) {
+            configJson = readjson(editor.document.uri.fsPath)
+        } else {
+            const groovyFilename = path.basename(groovyScriptPath, '.groovy');
+            const configPath = path.join(path.dirname(groovyScriptPath), `.${groovyFilename}.config.json`)
+            configJson = readjson(configPath)
+        }
+        var jobName = configJson.name
         if ("" === source) { return; }
 
         await this.update(source, jobName);
@@ -195,10 +226,25 @@ export class PipelineJack extends JackBase {
         // Inject the provided script/source into the job configuration.
         let parsed = await parseXmlString(xml);
         let root = parsed['flow-definition'];
-        root.definition[0].script = source;
-        root.quietPeriod = 0;
-        xml = new xml2js.Builder().buildObject(parsed);
+        let defClass = root.definition[0]['$'].class
+        if (!['org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition'].includes(defClass)) {
+            root.definition[0]['$'].class = 'org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition'
+            if (root.definition[0]['$'].plugin) {
+                delete root.definition[0]['$'].plugin
+            }
+        }
 
+        root.definition[0].script = [source];
+        root.definition[0].sandbox = ["true"];
+        
+        root.quietPeriod = 0;
+        try {
+            xml = new xml2js.Builder().buildObject(parsed);    
+        } catch (error) {
+            console.log('--err--> ', error)
+            throw error
+        }
+        
         if (!job) {
             let r = await this.showInformationModal(
                 `"${jobName}" doesn't exist. Do you want us to create it?`, { title: "Yes"} );
