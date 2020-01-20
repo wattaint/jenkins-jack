@@ -48,7 +48,7 @@ export class SharedLibApiManager {
     public async refresh(job: any | undefined = undefined) {
         let url = undefined !== job ?   `job/${job.fullName}/pipeline-syntax/globals` :
                                         'pipeline-syntax/globals';
-
+        url = 'job/shared-libs-doc/pipeline-syntax/globals'
         let html: string = await JenkinsHostManager.host().get(url);
         if (undefined === html) { return; }
 
