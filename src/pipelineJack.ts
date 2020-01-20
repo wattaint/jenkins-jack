@@ -4,6 +4,7 @@ import * as xml2js from "xml2js";
 import * as util from 'util';
 import * as path from 'path';
 import * as fs from 'fs';
+const yaml = require('js-yaml');
 
 import { getPipelineJobConfig, readjson, writejson, isGroovy } from './utils';
 import { JenkinsHostManager } from './jenkinsHostManager';
@@ -85,7 +86,7 @@ export class PipelineJack extends JackBase {
         }
 
         let groovyScriptPath = editor.document.uri.fsPath;
-        const isConfig = groovyScriptPath.match(/^.*\/\.(.*).config.json$/)
+        const isConfig = groovyScriptPath.match(/^.*\/(.*).config.yaml$/)
         if (isConfig) {
             const scriptName = isConfig[1];
             groovyScriptPath =  path.join(path.dirname(groovyScriptPath), `${scriptName}.groovy`)
@@ -147,26 +148,28 @@ export class PipelineJack extends JackBase {
         // Validate it's valid groovy source.
         var editor = vscode.window.activeTextEditor;
         if (!editor) { return; }
-        if (!["groovy", 'json'].includes(editor.document.languageId)) {
+        if (!["groovy", 'json', 'yaml', 'yml'].includes(editor.document.languageId)) {
             return;
         }
 
         // Grab filename to use as (part of) the Jenkins job name.
         let groovyScriptPath = editor.document.uri.fsPath;
-        const isConfig = groovyScriptPath.match(/^.*\/\.(.*).config.json$/)
+        const isConfig = groovyScriptPath.match(/^.*\/(.*).config.yaml$/)
         if (isConfig) {
             const scriptName = isConfig[1];
             groovyScriptPath =  path.join(path.dirname(groovyScriptPath), `${scriptName}.groovy`)
         }
         let source = fs.readFileSync(groovyScriptPath).toString()
-
+        
         let configJson = {name: ''}
         if (isConfig) {
-            configJson = readjson(editor.document.uri.fsPath)
+            //configJson = readjson(editor.document.uri.fsPath)
+            configJson = yaml.safeLoad(fs.readFileSync(editor.document.uri.fsPath), 'utf-8')
         } else {
             const groovyFilename = path.basename(groovyScriptPath, '.groovy');
-            const configPath = path.join(path.dirname(groovyScriptPath), `.${groovyFilename}.config.json`)
-            configJson = readjson(configPath)
+            const configPath = path.join(path.dirname(groovyScriptPath), `${groovyFilename}.config.yaml`)
+            // configJson = readjson(configPath)
+            configJson = yaml.safeLoad(fs.readFileSync(configPath), 'utf-8')
         }
         var jobName = configJson.name
         if ("" === source) { return; }
@@ -483,7 +486,7 @@ class PipelineConfig {
 
     constructor(scriptPath: string) {
         let parsed = path.parse(scriptPath);
-        let configFileName = `.${parsed.name}.config.json`;
+        let configFileName = `${parsed.name}.config.yaml`;
         this.path = path.join(parsed.dir, configFileName);
 
         // If config doesn't exist, write out defaults.

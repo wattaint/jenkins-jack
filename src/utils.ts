@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
+const yaml = require('js-yaml');
 
 function _sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -18,7 +19,7 @@ export function isGroovy() {
     var editor = vscode.window.activeTextEditor;
     if (!editor) { return false; }
     // retVal = ("groovy" === editor.document.languageId);
-    retVal = ['groovy', 'json'].includes(editor.document.languageId);
+    retVal = ['groovy', 'json', 'yaml', 'yml'].includes(editor.document.languageId);
     return retVal
 }
 
@@ -36,11 +37,17 @@ export async function showQuicPick(items: any[], ): Promise<void> {
  * @returns The parsed json.
  */
 export function readjson(path: string): any {
-    let raw: any = fs.readFileSync(path);
+    let raw: any;
     let json: any;
     try {
-        json = JSON.parse(raw);
+        if (path.endsWith('.yaml') || path.endsWith('.yml')) {
+            json  = yaml.safeLoad(fs.readFileSync(path))
+        } else {
+            raw  = fs.readFileSync(path);
+            json = JSON.parse(raw);
+        }
     } catch (err) {
+        console.log(err)
         err.message = `Could not parse parameter JSON from ${path}`;
         throw err;
     }
@@ -55,7 +62,8 @@ export function readjson(path: string): any {
 export function writejson(path: string, json: any) {
     try {
         let jsonString = JSON.stringify(json, null, 4);
-        fs.writeFileSync(path, jsonString, 'utf8');
+        // fs.writeFileSync(path, jsonString, 'utf8');
+        fs.writeFileSync(path, yaml.dump(JSON.parse(jsonString)), 'utf8');
     } catch (err) {
         err.message = `Could not write parameter JSON to ${path}`;
         throw err;
