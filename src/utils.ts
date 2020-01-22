@@ -1,9 +1,80 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
+const _ = require('lodash');
+const path = require('path');
+const fsx = require('fs-extra');
 const yaml = require('js-yaml');
 
+const GLOBAL_CONFIG = '.jenkins-jack.config.yaml'
 function _sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export function findConfig(aScriptPath: string) {
+    let currentDir = path.dirname(aScriptPath)
+    let dirs = [currentDir]
+
+    let count = 100
+    while ((path.dirname(currentDir) != currentDir) && count > 0 ) {
+        count -= 1
+        currentDir = path.dirname(currentDir)
+        dirs.push(path.dirname(currentDir))
+    }
+    
+    dirs = dirs.sort().reverse()
+
+    let found = false
+    let gConfigFile : string = '';
+    _.each(dirs, (dir: string) => {
+        if (found) { } else {
+            let p = path.join(dir, GLOBAL_CONFIG)
+            found = fsx.existsSync(p)
+            if (found) {
+                gConfigFile = p
+            }
+        }
+    })
+
+    let gConfig = {}
+    if (found) {
+        gConfig = yaml.safeLoad(fs.readFileSync(gConfigFile), 'utf-8')
+    }
+
+    let groovyScriptPath = aScriptPath;
+    let groovyConfigPath = null
+    const isConfig = groovyScriptPath.match(/^.*\/(.*).config.yaml$/)
+    const isGroovy = groovyScriptPath.match(/^.*\/(.*).groovy$/)
+    let scriptName = ''
+    let jobConfig = { name: '' }
+    if (isConfig) {
+        scriptName = isConfig[1];
+        groovyConfigPath = path.join(path.dirname(groovyScriptPath), `${scriptName}.config.yaml`)
+        groovyScriptPath = path.join(path.dirname(groovyScriptPath), `${scriptName}.groovy`)
+    } else if (isGroovy) {
+        scriptName = isGroovy[1];
+        groovyConfigPath = path.join(path.dirname(groovyScriptPath), `${scriptName}.config.yaml`)
+        groovyScriptPath = path.join(path.dirname(groovyScriptPath), `${scriptName}.groovy`)
+    }
+    if (fsx.existsSync(groovyConfigPath)) {
+        jobConfig = yaml.safeLoad(fs.readFileSync(groovyConfigPath), 'utf-8')
+    } 
+
+    const self = {
+        gConfig, groovyConfigPath, groovyScriptPath, jobConfig,
+        getJobName: (name: string) => {
+            let ret = ''
+            const jobPrefix = _.get(self, 'gConfig.job.prefix');
+            if (_.isString(jobPrefix)) {
+                if (jobPrefix.endsWith('/')) {
+                    ret = `${jobPrefix}${name}`
+                } else {
+                    ret = `${jobPrefix}/${name}`
+                }
+            }
+            return ret
+        }
+    }
+    return self
 }
 
 /**

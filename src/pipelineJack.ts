@@ -6,7 +6,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 const yaml = require('js-yaml');
 
-import { getPipelineJobConfig, readjson, writejson, isGroovy } from './utils';
+import { getPipelineJobConfig, readjson, writejson, isGroovy, findConfig } from './utils';
 import { JenkinsHostManager } from './jenkinsHostManager';
 import { SharedLibApiManager, SharedLibVar } from './sharedLibApiManager';
 import { JackBase } from './jack';
@@ -85,16 +85,16 @@ export class PipelineJack extends JackBase {
             return;
         }
 
-        let groovyScriptPath = editor.document.uri.fsPath;
-        const isConfig = groovyScriptPath.match(/^.*\/(.*).config.yaml$/)
-        if (isConfig) {
-            const scriptName = isConfig[1];
-            groovyScriptPath =  path.join(path.dirname(groovyScriptPath), `${scriptName}.groovy`)
-        }
+        //let groovyScriptPath = editor.document.uri.fsPath;
+        const {
+            getJobName,
+            groovyScriptPath,
+        } = findConfig(editor.document.uri.fsPath)
         let config = new PipelineConfig(groovyScriptPath);
         // Grab filename to use as the Jenkins job name.
         //var jobName = path.parse(path.basename(editor.document.fileName)).name;
-        var jobName = config.name
+        var jobName = getJobName(config.name)
+
         // Grab source from active editor.
         //let source = editor.document.getText();
         let source = fs.readFileSync(groovyScriptPath).toString()
@@ -128,25 +128,6 @@ export class PipelineJack extends JackBase {
         if (undefined === this.activeJob) { return; }
         await JenkinsHostManager.host().client.build.stop(this.activeJob.fullName, this.activeJob.nextBuildNumber).then(() => { });
         this.activeJob = undefined;
-    }
-
-    // @ts-ignore
-    private async updatePipeline_ori() {
-        // Validate it's valid groovy source.
-        var editor = vscode.window.activeTextEditor;
-        if (!editor) { return; }
-        if ("groovy" !== editor.document.languageId) {
-            return;
-        }
-
-        // Grab filename to use as (part of) the Jenkins job name.
-        var jobName = path.parse(path.basename(editor.document.fileName)).name;
-
-        // Grab source from active editor.
-        let source = editor.document.getText();
-        if ("" === source) { return; }
-
-        await this.update(source, jobName);
     }
 
     // @ts-ignore

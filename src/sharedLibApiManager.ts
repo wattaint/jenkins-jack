@@ -1,11 +1,8 @@
 import * as _ from 'lodash';
 import * as htmlParser from 'cheerio';
-import * as fsx from 'fs-extra';
-import * as path from 'path';
 import * as vscode from 'vscode';
 import { JenkinsHostManager } from './jenkinsHostManager';
-import * as fs from 'fs';
-const yaml = require('js-yaml');
+import { findConfig } from './utils';
 
 export class SharedLibVar {
     label: string;
@@ -57,19 +54,9 @@ export class SharedLibApiManager {
         let editor = vscode.window.activeTextEditor;
         if(editor) {
             let groovyScriptPath = editor.document.uri.fsPath;
-            let configFile = null
-            if (groovyScriptPath.endsWith('.groovy')) {
-                configFile = path.join(path.dirname(groovyScriptPath), path.basename(groovyScriptPath, '.groovy') + '.config.yaml')
-            } else if (groovyScriptPath.endsWith('.config.yaml')) {
-                configFile = groovyScriptPath
-            }
-            
-            if (configFile && (fsx.existsSync(configFile))) {
-                let configJson = yaml.safeLoad(fs.readFileSync(configFile), 'utf-8')
-                if (_.isString(configJson.name)) {
-                    url = `job/${configJson.name.split('/').join('/job/')}/pipeline-syntax/globals`
-                }
-            }
+            const { getJobName, jobConfig } = findConfig(groovyScriptPath)
+            let jobname = getJobName(jobConfig.name)
+            url = `job/${jobname.split('/').join('/job/')}/pipeline-syntax/globals`
         }
 
         let html: string = await JenkinsHostManager.host().get(url);
