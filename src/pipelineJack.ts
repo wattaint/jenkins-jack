@@ -102,9 +102,15 @@ export class PipelineJack extends JackBase {
         if ("" === source) { return; }
 
         // Build the pipeline.
-        this.activeJob = await this.build(source, jobName, config);
+        try {
+            this.activeJob = await this.build(source, jobName, config);    
+        } catch (error) {
+            console.log('-x-', error)
+            throw error
+        }
+        
         if (undefined === this.activeJob) { return; }
-
+        
         // Stream the output. Yep.
         await JenkinsHostManager.host().streamBuildOutput(
             this.activeJob.fullName,
@@ -459,6 +465,7 @@ export class PipelineJack extends JackBase {
                     throw err;
                 });
             } catch (err1) {
+                console.log('--err1--', err1)
                 throw err1;
             }
             
