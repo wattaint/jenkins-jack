@@ -18,15 +18,17 @@ export function findConfig(aScriptPath: string) {
     while ((path.dirname(currentDir) != currentDir) && count > 0 ) {
         count -= 1
         currentDir = path.dirname(currentDir)
-        dirs.push(path.dirname(currentDir))
+        dirs.push(currentDir)
     }
     
     dirs = dirs.sort().reverse()
-
+    
     let found = false
     let gConfigFile : string = '';
     _.each(dirs, (dir: string) => {
-        if (found) { } else {
+        if (found) {
+
+        } else {
             let p = path.join(dir, GLOBAL_CONFIG)
             found = fsx.existsSync(p)
             if (found) {
@@ -62,8 +64,9 @@ export function findConfig(aScriptPath: string) {
     const self = {
         gConfig, groovyConfigPath, groovyScriptPath, jobConfig,
         getJobName: (name: string) => {
-            let ret = ''
+            let ret = name
             const jobPrefix = _.get(self, 'gConfig.job.prefix');
+            
             if (_.isString(jobPrefix)) {
                 if (jobPrefix.endsWith('/')) {
                     ret = `${jobPrefix}${name}`

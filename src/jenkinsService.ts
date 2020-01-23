@@ -120,6 +120,7 @@ export class JenkinsService {
             if (err.notFound) {
                 return undefined;
             }
+            console.log('--err--', err)
             console.log(err);
             vscode.window.showWarningMessage('-3-' + this._cantConnectMessage);
             throw err;

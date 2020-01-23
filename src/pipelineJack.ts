@@ -394,7 +394,6 @@ export class PipelineJack extends JackBase {
      *          Undefined if cancellation or failure to complete flow.
      */
     public async build(source: string, job: string, config: PipelineConfig) {
-
         if (undefined !== this.activeJob) {
             this.showWarningMessage(`Already building/streaming - ${this.activeJob.fullName}: #${this.activeJob.nextBuildNumber}`);
             return undefined;
