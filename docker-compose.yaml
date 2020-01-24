@@ -1,0 +1,38 @@
+x-kaniko: &kaniko
+  image: common-docker.artifactory.kasikornbank.com:8443/kaniko-project/executor:debug-v0.16.0--certs-bundled
+  environment:
+    DOCKER_CONFIG: /workspace/.docker
+  volumes:
+    - .:/workspace
+
+version: "2"
+services:
+  docker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+  registry:
+    image: registry:2.7.1
+    volumes:
+    - .cache:/var/lib/registry
+
+  warmer:
+    <<: *kaniko
+    entrypoint: /kaniko/warmer
+    command: |
+      --cache-dir=/workspace/.cache
+      --image=devops-69801-docker.artifactory.kasikornbank.com:8443/node:12.14.1-buster-slim
+
+  kaniko:
+    <<: *kaniko
+    depends_on:
+    - registry
+    command: |
+      --cache-repo=registry:5000/cache
+      --cache-dir=/workspace/.cache
+      --insecure-registry=registry:5000
+      --cache=true
+      --context /workspace
+      --no-push
+      --dockerfile Dockerfile

@@ -26,10 +26,13 @@ export function findConfig(aScriptPath: string) {
     let found = false
     let gConfigFile : string = '';
     _.each(dirs, (dir: string) => {
+        let p = path.join(dir, GLOBAL_CONFIG)
+        if (!found) {
+            console.log('#find gconfig : ', p)
+        }
         if (found) {
-
+            console.log('  #found gconfig : --- ', true , ' ---')
         } else {
-            let p = path.join(dir, GLOBAL_CONFIG)
             found = fsx.existsSync(p)
             if (found) {
                 gConfigFile = p
