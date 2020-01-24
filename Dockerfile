@@ -1,11 +1,11 @@
 FROM devops-69801-docker.artifactory.kasikornbank.com:8443/node:12.14.1-buster-slim
-
 ENV PATH $PATH:/app/node_modules/.bin
+
+COPY .npmrc /root/.npmrc
 RUN npm install --verbose -g vsce
 
 WORKDIR /app
 COPY package.json package-lock.json /app/
-COPY .npmrc /root/.npmrc
 
 ARG HTTP_PROXY
 
