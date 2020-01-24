@@ -6,6 +6,12 @@ RUN npm install --verbose -g vsce
 WORKDIR /app
 COPY package.json package-lock.json /app/
 COPY .npmrc /root/.npmrc
+
+ARG HTTP_PROXY
+
+ENV HTTP_PROXY=${HTTP_PROXY}
+ENV HTTP_PROXYS=${HTTP_PROXY}
+
 RUN npm --verbose install
 
 COPY .vscodeignore tsconfig.json tslint.json /app/
