@@ -23,5 +23,5 @@ COPY src /app/src
 RUN npm run compile
 RUN vsce package
 
-ARG GIT_COMMIT
-RUN mv jenkins-jack-1.0.1.vsix jenkins-jack-1.0.1--${GIT_COMMIT}.vsix
+#ARG GIT_COMMIT
+#RUN mv jenkins-jack-1.0.1.vsix jenkins-jack-1.0.1--${GIT_COMMIT}.vsix
