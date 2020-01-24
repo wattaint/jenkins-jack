@@ -25,5 +25,6 @@ RUN vsce package
 
 ARG GIT_COMMIT
 RUN cp jenkins-jack-1.0.1.vsix /app/jenkins-jack-1.0.1--${GIT_COMMIT}.vsix
-FROM devops-69801-docker.artifactory.kasikornbank.com:8443/node:12.14.1-buster-slim
+
+FROM devops-69801-docker.artifactory.kasikornbank.com:8443/node:12.14.1-alpine3.11
 COPY --from=builder /app/jenkins-jack-1.0.1--${GIT_COMMIT}.vsix /jenkins-jack-1.0.1--${GIT_COMMIT}.vsix
