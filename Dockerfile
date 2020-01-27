@@ -1,4 +1,4 @@
-FROM devops-69801-docker.artifactory.kasikornbank.com:8443/node:12.14.1-buster-slim AS builder
+FROM node:12.14.1-buster-slim AS builder
 ENV PATH $PATH:/app/node_modules/.bin
 
 COPY .npmrc /root/.npmrc
@@ -23,8 +23,15 @@ COPY src /app/src
 RUN npm run compile
 RUN vsce package
 
-ARG GIT_COMMIT
-RUN cp jenkins-jack-1.0.1.vsix /app/jenkins-jack-1.0.1--${GIT_COMMIT}.vsix
+ARG GIT_COMMIT=latest
+ARG PACKAGE_VERSION
 
-FROM devops-69801-docker.artifactory.kasikornbank.com:8443/node:12.14.1-alpine3.11
-COPY --from=builder /app/jenkins-jack-1.0.1--${GIT_COMMIT}.vsix /jenkins-jack-1.0.1--${GIT_COMMIT}.vsix
+RUN ls -lart
+RUN cp jenkins-jack-x-${PACKAGE_VERSION}.vsix /app/jenkins-jack-x-${PACKAGE_VERSION}--${GIT_COMMIT}.vsix
+
+FROM node:12.14.1-buster-slim
+
+ARG GIT_COMMIT=latest
+ARG PACKAGE_VERSION
+
+COPY --from=builder /app/jenkins-jack-x-${PACKAGE_VERSION}--${GIT_COMMIT}.vsix /jenkins-jack-x-${PACKAGE_VERSION}--${GIT_COMMIT}.vsix

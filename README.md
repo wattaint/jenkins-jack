@@ -1,8 +1,9 @@
-# (--build--)
+
+# (ori: https://github.com/tabeyti/jenkins-jack)
 
 ![logo](images/demo.gif)
 
-# Jenkins Jack
+# Jenkins JackX
 
 Jack into your remote Jenkins to execute Pipeline scripts, provide Pipeline step auto-completions, pull Shared Library step documenation, run console groovy scripts across multiple nodes, and more!
 
