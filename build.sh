@@ -12,6 +12,8 @@ echo "     Name: ${PACKAGE_NAME}"
 echo "  Version: ${PACKAGE_VERSION}"
 echo "GitCommit: ${GIT_COMMIT}"
 
+echo $GIT_COMMIT > $(pwd)/builds/commit.txt
+
 docker-compose stop
 docker-compose build docker
 docker-compose up --no-start docker
