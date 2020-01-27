@@ -35,9 +35,12 @@ services:
     - registry
     environment: 
       GIT_COMMIT: ${GIT_COMMIT}
+      PACKAGE_NAME: ${PACKAGE_NAME}
+      PACKAGE_VERSION: ${PACKAGE_VERSION}
     command: |
-      --build-args GIT_COMMIT=${GIT_COMMIT}
-      --build-args PACKAGE_VERSION=${PACKAGE_VERSION}
+      --build-arg GIT_COMMIT=${GIT_COMMIT}
+      --build-arg PACKAGE_NAME=${PACKAGE_NAME}
+      --build-arg PACKAGE_VERSION=${PACKAGE_VERSION}
       --cache-dir=/workspace/.cache
       --cache-repo=registry:5000/cache
       --cache=true

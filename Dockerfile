@@ -23,15 +23,13 @@ COPY src /app/src
 RUN npm run compile
 RUN vsce package
 
-ARG GIT_COMMIT=latest
+ARG PACKAGE_NAME
 ARG PACKAGE_VERSION
-
-RUN ls -lart
-RUN cp jenkins-jack-x-${PACKAGE_VERSION}.vsix /app/jenkins-jack-x-${PACKAGE_VERSION}--${GIT_COMMIT}.vsix
 
 FROM node:12.14.1-buster-slim
 
-ARG GIT_COMMIT=latest
+ARG GIT_COMMIT
+ARG PACKAGE_NAME
 ARG PACKAGE_VERSION
 
-COPY --from=builder /app/jenkins-jack-x-${PACKAGE_VERSION}--${GIT_COMMIT}.vsix /jenkins-jack-x-${PACKAGE_VERSION}--${GIT_COMMIT}.vsix
+COPY --from=builder /app/${PACKAGE_NAME}-${PACKAGE_VERSION}.vsix /${PACKAGE_NAME}-${PACKAGE_VERSION}--${GIT_COMMIT}.vsix
