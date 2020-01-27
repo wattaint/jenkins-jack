@@ -1,2 +1,6 @@
+.cache
+.docker
 .git
+.vscode
 node_modules
+out
