@@ -5,7 +5,7 @@ def GitCommit
 def GitRepoBranch = 'build-release'
 
 def kscmClient = kscmFile.getClient(auth: [credentialsId: 'devops_git_user'])
-def jfrogClient = jfrogArtifact.getClient(auth: [credentialsId: 'devops_git_user'])
+def jfrogClient = jfrogArtifact.getClient(auth: [credentialsId: 'devopscicd101user'])
 
 kslave(containers: [
     [name: 'kaniko', tag: 'debug-v0.16.0'],
@@ -22,6 +22,14 @@ kslave(containers: [
             currentBuild.displayName = "#${env.BUILD_NUMBER}_${GitCommit}"
         }
 
+        stage('Replace Build Text') {
+            writeFile file: 'package.json-ori', text: readFile('package.json')
+            def files = ['README.md', 'package.json']
+            files.each { file ->
+                writeFile file: file, text: readFile(file).replaceAll('(--build--)', "(build: ${GitCommit})")
+            }
+        }
+
         stage('Build BaseImage') {
             container('kaniko') {
                 def npmrc = jfrog.getNpmrc()
@@ -34,7 +42,8 @@ kslave(containers: [
                     RUN npm install --verbose -g vsce
 
                     WORKDIR /app
-                    COPY package.json package-lock.json /app/
+                    COPY package.json-ori /app/package.json
+                    COPY package-lock.json /app/package-lock.json
 
                     ARG HTTP_PROXY
 
@@ -43,6 +52,8 @@ kslave(containers: [
 
                     RUN npm --verbose install
 
+                    COPY README.md /app/README.md
+                    COPY package.json /app/package.json
                     COPY .vscodeignore tsconfig.json tslint.json /app/
 
                     COPY images /app/images
@@ -92,18 +103,18 @@ kslave(containers: [
         stage('Copy Package') {
             container('oc-cli') {
                 ocpCopy copyParam
-                sh '''
-                    ls -lart
-                '''
+                sh 'ls -lart'
             }
         }
 
+        def targetGenericRepo = 'devops_cicd101'
+        def itemBase = 'vscode/plugins/jenkins-jack/builds'
         stage('Push Package') {
             jfrogClient.upload([
                 file: copyParam.to,
                 repo: [
-                    repoKey: 'devops_cicd101',
-                    itemPath: "vscode/plugins/jenkins-jack/builds/jenkins-jack-1.0.1--${GitCommit}.vsix",
+                    repoKey: targetGenericRepo,
+                    itemPath: "${itemBase}/jenkins-jack-1.0.1--${GitCommit}.vsix",
                 ],
             ])
 
@@ -112,8 +123,8 @@ kslave(containers: [
             jfrogClient.upload([
                 file: "${WORKSPACE}/${buildFile}",
                 repo: [
-                    repoKey: 'devops_cicd101',
-                    itemPath: "vscode/plugin/jenkins-jack/builds/${buildFile}",
+                    repoKey: targetGenericRepo,
+                    itemPath: "${itemBase}/${buildFile}",
                 ],
             ])
         }
@@ -134,7 +145,7 @@ kslave(containers: [
                     sh """
                         pwd
                         ls -lart /
-                        
+
                         mv /jenkins-jack-1.0.1--${GitCommit}.vsix ${WORKSPACE}/jenkins-jack-1.0.1--${GitCommit}.vsix
                     """
                 }
