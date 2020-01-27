@@ -32,3 +32,5 @@ docker-compose run --rm warmer
 docker-compose run --rm kaniko
 docker-compose stop
 docker-compose rm -f
+
+code --install-extension builds/jenkins-jack-x-1.0.1-x1--$(cat builds/commit.txt).vsix
