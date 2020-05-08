@@ -7,3 +7,5 @@ out/
 .docker
 *.vsix
 builds/commit.txt
+.timestamp
+builds/jenkins-jack-x-*

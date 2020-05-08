@@ -37,9 +37,8 @@ COPY src /app/src
 
 
 RUN npm run compile
-
 RUN sed -i 's/--build--/'"$GIT_COMMIT"'/g' package.json
 RUN sed -i 's/0.0.0/'"$PACKAGE_VERSION"'/g' package.json
-RUN cat package.json
+
+COPY .timestamp /.timestamp
 RUN vsce package
-RUN cp /app/${PACKAGE_NAME}-${PACKAGE_VERSION}.vsix /${PACKAGE_NAME}-${PACKAGE_VERSION}--${GIT_COMMIT}.vsix

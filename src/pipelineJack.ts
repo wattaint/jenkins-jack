@@ -88,13 +88,14 @@ export class PipelineJack extends JackBase {
         //let groovyScriptPath = editor.document.uri.fsPath;
         const {
             getJobName,
+            jobConfig,
             groovyScriptPath,
         } = findConfig(editor.document.uri.fsPath)
         let config = new PipelineConfig(groovyScriptPath);
         // Grab filename to use as the Jenkins job name.
         //var jobName = path.parse(path.basename(editor.document.fileName)).name;
-        var jobName = getJobName(config.name)
-
+        var jobName = getJobName(jobConfig.name)
+        console.log('[DEBUG] ' + `job name --> ${jobName}`)
         // Grab source from active editor.
         //let source = editor.document.getText();
         let source = fs.readFileSync(groovyScriptPath).toString()

@@ -23,25 +23,25 @@ export function findConfig(aScriptPath: string) {
     
     dirs = dirs.sort().reverse()
     
-    let found = false
+    let foundGConfig = false
     let gConfigFile : string = '';
     _.each(dirs, (dir: string) => {
         let p = path.join(dir, GLOBAL_CONFIG)
-        if (!found) {
+        if (!foundGConfig) {
             console.log('#find gconfig : ', p)
         }
-        if (found) {
+        if (foundGConfig) {
             console.log('  #found gconfig : --- ', true , ' ---')
         } else {
-            found = fsx.existsSync(p)
-            if (found) {
+            foundGConfig = fsx.existsSync(p)
+            if (foundGConfig) {
                 gConfigFile = p
             }
         }
     })
 
     let gConfig = {}
-    if (found) {
+    if (foundGConfig) {
         gConfig = yaml.safeLoad(fs.readFileSync(gConfigFile), 'utf-8')
     }
 
@@ -50,7 +50,9 @@ export function findConfig(aScriptPath: string) {
     const isConfig = groovyScriptPath.match(/^.*\/(.*).config.yaml$/)
     const isGroovy = groovyScriptPath.match(/^.*\/(.*).groovy$/)
     let scriptName = ''
-    let jobConfig = { name: '' }
+
+    let jobConfig = { name: scriptName, params: null }
+    
     if (isConfig) {
         scriptName = isConfig[1];
         groovyConfigPath = path.join(path.dirname(groovyScriptPath), `${scriptName}.config.yaml`)
@@ -60,10 +62,22 @@ export function findConfig(aScriptPath: string) {
         groovyConfigPath = path.join(path.dirname(groovyScriptPath), `${scriptName}.config.yaml`)
         groovyScriptPath = path.join(path.dirname(groovyScriptPath), `${scriptName}.groovy`)
     }
+
     if (fsx.existsSync(groovyConfigPath)) {
         jobConfig = yaml.safeLoad(fs.readFileSync(groovyConfigPath), 'utf-8')
-    } 
-
+        if (!_.isString(jobConfig.name)) {
+            jobConfig.name = scriptName
+        }
+    } else if (foundGConfig) {
+        let nameFullPath = groovyScriptPath.toString().replace(path.dirname(gConfigFile).toString(), '')
+        nameFullPath = nameFullPath.split(path.sep).join('/').replace('.groovy', '')
+        if (nameFullPath.startsWith(path.sep)) {
+            nameFullPath = nameFullPath.substr(path.sep.toString().length)
+        }
+        console.log('---nameFullPath---> ', nameFullPath)
+        jobConfig.name = nameFullPath
+    }
+    
     const self = {
         gConfig, groovyConfigPath, groovyScriptPath, jobConfig,
         getJobName: (name: string) => {
@@ -137,6 +151,11 @@ export function readjson(path: string): any {
  * @param json The json to write out.
  */
 export function writejson(path: string, json: any) {
+    if (_.isEmpty(json.params)) {
+        console.log('Skip: WriteJson --> ', json)
+        return
+    }
+    console.log('WriteJson --> ', json)
     try {
         let jsonString = JSON.stringify(json, null, 4);
         // fs.writeFileSync(path, jsonString, 'utf8');

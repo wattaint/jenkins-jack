@@ -1,5 +1,7 @@
 #!/bin/bash
 
+echo -n "$(date)" > .timestamp
+
 docker-compose stop
 docker-compose rm -f
 GIT_COMMIT=$(git rev-parse HEAD | cut -c1-8)
@@ -24,7 +26,7 @@ docker-compose build docker
 docker-compose up --no-start docker
 id=$(docker-compose ps -q docker | cut -c1-12)
 echo $id
-docker cp $id:/jenkins-jack-x-${PACKAGE_VERSION}--${GIT_COMMIT}.vsix ./builds/
+docker cp $id:/app/${PACKAGE_NAME}-${PACKAGE_VERSION}.vsix ./builds/${PACKAGE_NAME}-${PACKAGE_VERSION}.vsix
 docker-compose rm -f
 
 # # - kaniko
