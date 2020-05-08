@@ -9,6 +9,7 @@ export class JenkinsService {
     // @ts-ignore
     public client: any;
     public readonly name: string;
+    public username: string;
 
     private _config: any;
     private _jenkinsUri: string;
@@ -19,6 +20,7 @@ export class JenkinsService {
     public constructor(name: string, uri: string, username: string, password: string) {
         this.useBasicAuth = '';
         this.name = name;
+        this.username = username;
 
         let protocol = 'http';
         let host = uri;
@@ -34,6 +36,7 @@ export class JenkinsService {
         
         if (password.toString().toLowerCase().startsWith('basic')) {
             this.useBasicAuth = password;
+            this.username = username
             this._jenkinsUri = `${protocol}://${host}`;
             this.client = jenkins({
                 baseUrl: this._jenkinsUri,
@@ -45,6 +48,7 @@ export class JenkinsService {
             });
         } else {
             this._jenkinsUri = `${protocol}://${username}:${password}@${host}`;
+            this.username = username
             this.client = jenkins({
                 baseUrl: this._jenkinsUri,
                 crumbIssuer: false,

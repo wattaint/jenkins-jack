@@ -11,7 +11,17 @@ import { JenkinsHostManager } from './jenkinsHostManager';
 import { SharedLibApiManager, SharedLibVar } from './sharedLibApiManager';
 import { JackBase } from './jack';
 
+const moment = require('moment')
+
 const parseXmlString = util.promisify(xml2js.parseString) as any as (xml: string) => any;
+
+const getUpdatedSource = (source: string) => {
+    const txt = 'Updated by Jenkins Jack X'
+    if (source.indexOf(txt) > -1) {
+        return source
+    }
+    return `/* -- ${txt} -- \n Date: ${moment()}\n User: ${JenkinsHostManager.host().username}\n*/\n\n` + source
+}
 
 export class PipelineJack extends JackBase {
     private config: any;
@@ -104,7 +114,7 @@ export class PipelineJack extends JackBase {
 
         // Build the pipeline.
         try {
-            this.activeJob = await this.build(source, jobName, config);    
+            this.activeJob = await this.build(getUpdatedSource(source), jobName, config);    
         } catch (error) {
             console.log('-x-', error)
             throw error
@@ -162,7 +172,7 @@ export class PipelineJack extends JackBase {
         var jobName = configJson.name
         if ("" === source) { return; }
 
-        await this.update(source, jobName);
+        await this.update(getUpdatedSource(source), jobName);
     }
 
     /**
@@ -225,7 +235,7 @@ export class PipelineJack extends JackBase {
             }
         }
 
-        root.definition[0].script = [source];
+        root.definition[0].script = [getUpdatedSource(source)];
         root.definition[0].sandbox = ["true"];
         
         root.quietPeriod = 0;
@@ -376,7 +386,8 @@ export class PipelineJack extends JackBase {
             });
             progress.report({ increment: 50 });
             return new Promise(async resolve => {
-                await this.createUpdate(source, job);
+                const newSource = getUpdatedSource(source);
+                await this.createUpdate(newSource, job);
                 this.outputChannel.appendLine(this.barrierLine);
                 this.outputChannel.appendLine(`Pipeline ${job} updated!`);
                 this.outputChannel.appendLine(this.barrierLine);
@@ -410,7 +421,7 @@ export class PipelineJack extends JackBase {
             });
 
             progress.report({ increment: 0, message: `Creating/updating Pipeline job.` });
-            let currentJob = await this.createUpdate(source, job);
+            let currentJob = await this.createUpdate(getUpdatedSource(source), job);
             if (undefined === currentJob) { return; }
 
             let jobName = currentJob.fullName;
