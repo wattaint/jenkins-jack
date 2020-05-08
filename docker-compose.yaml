@@ -1,5 +1,5 @@
 x-kaniko: &kaniko
-  image: gcr.io/kaniko-project/executor:debug-v0.16.0
+  image: gcr.io/kaniko-project/executor:debug-v0.21.0
   environment:
     DOCKER_CONFIG: /workspace/.docker
   volumes:
@@ -17,34 +17,34 @@ services:
         PACKAGE_NAME: ${PACKAGE_NAME}
         PACKAGE_VERSION: ${PACKAGE_VERSION}
 
-  registry:
-    image: registry:2.7.1
-    volumes:
-    - .cache:/var/lib/registry
+  # registry:
+  #   image: registry:2.7.1
+  #   volumes:
+  #   - .cache:/var/lib/registry
 
-  warmer:
-    <<: *kaniko
-    entrypoint: /kaniko/warmer
-    command: |
-      --cache-dir=/workspace/.cache
-      --image=node:12.14.1-buster-slim
+  # warmer:
+  #   <<: *kaniko
+  #   entrypoint: /kaniko/warmer
+  #   command: |
+  #     --cache-dir=/workspace/.cache
+  #     --image=node:12.14.1-buster-slim
 
-  kaniko:
-    <<: *kaniko
-    depends_on:
-    - registry
-    environment: 
-      GIT_COMMIT: ${GIT_COMMIT}
-      PACKAGE_NAME: ${PACKAGE_NAME}
-      PACKAGE_VERSION: ${PACKAGE_VERSION}
-    command: |
-      --build-arg GIT_COMMIT=${GIT_COMMIT}
-      --build-arg PACKAGE_NAME=${PACKAGE_NAME}
-      --build-arg PACKAGE_VERSION=${PACKAGE_VERSION}
-      --cache-dir=/workspace/.cache
-      --cache-repo=registry:5000/cache
-      --cache=true
-      --context /workspace
-      --dockerfile Dockerfile
-      --insecure-registry=registry:5000
-      --no-push
+  # kaniko:
+  #   <<: *kaniko
+  #   depends_on:
+  #   - registry
+  #   environment: 
+  #     GIT_COMMIT: ${GIT_COMMIT}
+  #     PACKAGE_NAME: ${PACKAGE_NAME}
+  #     PACKAGE_VERSION: ${PACKAGE_VERSION}
+  #   command: |
+  #     --build-arg GIT_COMMIT=${GIT_COMMIT}
+  #     --build-arg PACKAGE_NAME=${PACKAGE_NAME}
+  #     --build-arg PACKAGE_VERSION=${PACKAGE_VERSION}
+  #     --cache-dir=/workspace/.cache
+  #     --cache-repo=registry:5000/cache
+  #     --cache=true
+  #     --context /workspace
+  #     --dockerfile Dockerfile
+  #     --insecure-registry=registry:5000
+  #     --no-push
