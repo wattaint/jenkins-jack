@@ -3,8 +3,8 @@
 docker-compose stop
 docker-compose rm -f
 GIT_COMMIT=$(git rev-parse HEAD | cut -c1-8)
-PACKAGE_VERSION=$(cat package.json | jq -r '.version')
-PACKAGE_NAME=$(cat package.json | jq -r '.name')
+PACKAGE_VERSION=$(cat release.json | jq -r '.version')
+PACKAGE_NAME=$(cat release.json | jq -r '.name')
 
 export GIT_COMMIT
 export PACKAGE_VERSION
