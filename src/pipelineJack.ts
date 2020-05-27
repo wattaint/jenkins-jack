@@ -170,6 +170,8 @@ export class PipelineJack extends JackBase {
             configJson = yaml.safeLoad(fs.readFileSync(configPath), 'utf-8')
         }
         var jobName = configJson.name
+        console.log('--groovyScriptPath--> ', groovyScriptPath)
+        console.log('Job nane ---> ', jobName)
         if ("" === source) { return; }
 
         await this.update(getUpdatedSource(source), jobName);

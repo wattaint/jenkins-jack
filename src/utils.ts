@@ -63,18 +63,22 @@ export function findConfig(aScriptPath: string) {
         groovyScriptPath = path.join(path.dirname(groovyScriptPath), `${scriptName}.groovy`)
     }
 
-    if (fsx.existsSync(groovyConfigPath)) {
-        jobConfig = yaml.safeLoad(fs.readFileSync(groovyConfigPath), 'utf-8')
-        if (!_.isString(jobConfig.name)) {
-            jobConfig.name = scriptName
-        }
-    } else if (foundGConfig) {
-        let nameFullPath = groovyScriptPath.toString().replace(path.dirname(gConfigFile).toString(), '')
+    let nameFullPath = scriptName
+    if (foundGConfig) {
+        nameFullPath = groovyScriptPath.toString().replace(path.dirname(gConfigFile).toString(), '')
         nameFullPath = nameFullPath.split(path.sep).join('/').replace('.groovy', '')
         if (nameFullPath.startsWith(path.sep)) {
             nameFullPath = nameFullPath.substr(path.sep.toString().length)
         }
-        console.log('---nameFullPath---> ', nameFullPath)
+        console.log('[DEBUG] ---nameFullPath---> ', nameFullPath)
+    }
+
+    if (fsx.existsSync(groovyConfigPath)) {
+        jobConfig = yaml.safeLoad(fs.readFileSync(groovyConfigPath), 'utf-8')
+        if (!_.isString(jobConfig.name)) {
+            jobConfig.name = nameFullPath
+        }
+    } else if (foundGConfig) {
         jobConfig.name = nameFullPath
     }
     
