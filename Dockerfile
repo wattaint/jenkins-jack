@@ -6,9 +6,8 @@ COPY .npmrc /root/.npmrc
 COPY package.json package-lock.json /app/
 
 ARG HTTP_PROXY
-ENV HTTP_PROXY=${HTTP_PROXY}
-ENV HTTP_PROXYS=${HTTP_PROXY}
-
+ARG HTTPS_PROXY
+ARG NO_PROXY
 RUN npm install vsce@1.75.0 && npm --verbose install
 
 COPY .vscodeignore tsconfig.json tslint.json /app/

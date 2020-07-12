@@ -96,6 +96,8 @@ export class PipelineJack extends JackBase {
         }
 
         //let groovyScriptPath = editor.document.uri.fsPath;
+        console.log('[DEBUG] -- 1 -- ', editor.document.uri)
+        console.log('[DEBUG] -- 2 -- ', editor.document.uri.toString())
         const {
             getJobName,
             jobConfig,
