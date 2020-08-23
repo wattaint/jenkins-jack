@@ -40,7 +40,7 @@ export class JenkinsService {
             this._jenkinsUri = `${protocol}://${host}`;
             this.client = jenkins({
                 baseUrl: this._jenkinsUri,
-                crumbIssuer: false,
+                crumbIssuer: true,
                 promisify: true,
                 headers: {
                     'Authorization': password,
@@ -51,7 +51,7 @@ export class JenkinsService {
             this.username = username
             this.client = jenkins({
                 baseUrl: this._jenkinsUri,
-                crumbIssuer: false,
+                crumbIssuer: true,
                 promisify: true,
             });
         }
