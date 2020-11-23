@@ -21,7 +21,7 @@ const getUpdatedSource = (source: string) => {
     if (source.indexOf(txt) > -1) {
         return source;
     }
-    return source + `\n\n\n/* -----------------------\n-- ${txt} -- \n Date: ${moment()}\n User: ${JenkinsHostManager.host().username}\n*/`;
+    return source + `\n\n\n/* ----------------------- \n ${txt} \n Date: ${moment()}\n User: ${JenkinsHostManager.host().username}\n----------------------- */`;
 };
 
 export class PipelineJack extends JackBase {
@@ -241,8 +241,9 @@ export class PipelineJack extends JackBase {
         if (_.isArray(root.definition) && (root.definition.length > 0)) {
             
         } else {
-            const message = `This job (${jobName}) already exists, but not found definition. please reconfigure job by add some groovy scripts.`
-            vscode.window.showErrorMessage(message);
+            const message = `"${jobName}"\nAlready exists, but not found definition.\nPlease reconfigure job by add some groovy scripts.`;
+            vscode.window.showErrorMessage(message, { modal: true });
+            return;
             throw new Error(message);
         }
 
