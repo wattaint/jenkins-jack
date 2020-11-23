@@ -1,104 +1,126 @@
 import * as vscode from 'vscode';
+
 import * as fs from 'fs';
+
 const _ = require('lodash');
 const path = require('path');
 const fsx = require('fs-extra');
 const yaml = require('js-yaml');
 
-const GLOBAL_CONFIG = '.jenkins-jack.config.yaml'
-function _sleep(ms: number) {
+const GLOBAL_CONFIG = '.jenkins-jack.config.yaml';
+
+function doSleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export function findConfig(aScriptPath: string) {
-    let currentDir = path.dirname(aScriptPath)
-    let dirs = [currentDir]
+    let currentDir = path.dirname(aScriptPath);
+    let dirs = [currentDir];
 
-    let count = 100
-    while ((path.dirname(currentDir) != currentDir) && count > 0 ) {
-        count -= 1
-        currentDir = path.dirname(currentDir)
-        dirs.push(currentDir)
+    let count = 100;
+    while ((path.dirname(currentDir) !== currentDir) && count > 0 ) {
+        count -= 1;
+        currentDir = path.dirname(currentDir);
+        dirs.push(currentDir);
     }
     
-    dirs = dirs.sort().reverse()
+    dirs = dirs.sort().reverse();
     
-    let foundGConfig = false
+    let foundGConfig = false;
     let gConfigFile : string = '';
     _.each(dirs, (dir: string) => {
-        let p = path.join(dir, GLOBAL_CONFIG)
+        let p = path.join(dir, GLOBAL_CONFIG);
         if (!foundGConfig) {
-            console.log('#find gconfig : ', p)
+            console.log('#find gconfig : ', p);
         }
         if (foundGConfig) {
-            console.log('  #found gconfig : --- ', true , ' ---')
+            console.log('  #found gconfig : --- ', true , ' ---');
         } else {
-            foundGConfig = fsx.existsSync(p)
+            foundGConfig = fsx.existsSync(p);
             if (foundGConfig) {
-                gConfigFile = p
+                gConfigFile = p;
             }
         }
-    })
+    });
 
-    let gConfig = {}
+    let gConfig = {};
     if (foundGConfig) {
-        gConfig = yaml.safeLoad(fs.readFileSync(gConfigFile), 'utf-8')
+        gConfig = yaml.safeLoad(fs.readFileSync(gConfigFile), 'utf-8');
     }
 
     let groovyScriptPath = aScriptPath;
-    let groovyConfigPath = null
-    const isConfig = groovyScriptPath.match(/^.*\/(.*).config.yaml$/)
-    const isGroovy = groovyScriptPath.match(/^.*\/(.*).groovy$/)
-    let scriptName = ''
+    let groovyConfigPath = null;
+    const isConfig = groovyScriptPath.match(/^.*\/(.*).config.yaml$/);
+    const isGroovy = groovyScriptPath.match(/^.*\/(.*).groovy$/);
+    let scriptName = '';
 
-    let jobConfig = { name: scriptName, params: null }
+    let jobConfig = { name: scriptName, params: null };
     
     if (isConfig) {
         scriptName = isConfig[1];
-        groovyConfigPath = path.join(path.dirname(groovyScriptPath), `${scriptName}.config.yaml`)
-        groovyScriptPath = path.join(path.dirname(groovyScriptPath), `${scriptName}.groovy`)
+        groovyConfigPath = path.join(path.dirname(groovyScriptPath), `${scriptName}.config.yaml`);
+        groovyScriptPath = path.join(path.dirname(groovyScriptPath), `${scriptName}.groovy`);
     } else if (isGroovy) {
         scriptName = isGroovy[1];
-        groovyConfigPath = path.join(path.dirname(groovyScriptPath), `${scriptName}.config.yaml`)
-        groovyScriptPath = path.join(path.dirname(groovyScriptPath), `${scriptName}.groovy`)
+        groovyConfigPath = path.join(path.dirname(groovyScriptPath), `${scriptName}.config.yaml`);
+        groovyScriptPath = path.join(path.dirname(groovyScriptPath), `${scriptName}.groovy`);
     }
 
-    let nameFullPath = scriptName
+    let nameFullPath = scriptName;
     if (foundGConfig) {
-        nameFullPath = groovyScriptPath.toString().replace(path.dirname(gConfigFile).toString(), '')
-        nameFullPath = nameFullPath.split(path.sep).join('/').replace('.groovy', '')
+        nameFullPath = groovyScriptPath.toString().replace(path.dirname(gConfigFile).toString(), '');
+        nameFullPath = nameFullPath.split(path.sep).join('/').replace('.groovy', '');
         if (nameFullPath.startsWith(path.sep)) {
-            nameFullPath = nameFullPath.substr(path.sep.toString().length)
+            nameFullPath = nameFullPath.substr(path.sep.toString().length);
         }
-        console.log('[DEBUG] ---nameFullPath---> ', nameFullPath)
+        console.log('[DEBUG] ---nameFullPath---> ', nameFullPath);
     }
 
     if (fsx.existsSync(groovyConfigPath)) {
-        jobConfig = yaml.safeLoad(fs.readFileSync(groovyConfigPath), 'utf-8')
+        jobConfig = yaml.safeLoad(fs.readFileSync(groovyConfigPath), 'utf-8');
         if (!_.isString(jobConfig.name)) {
-            jobConfig.name = nameFullPath
+            jobConfig.name = nameFullPath;
         }
     } else if (foundGConfig) {
-        jobConfig.name = nameFullPath
+        jobConfig.name = nameFullPath;
     }
     
     const self = {
         gConfig, groovyConfigPath, groovyScriptPath, jobConfig,
         getJobName: (name: string) => {
-            let ret = name
+            let ret = name;
+            let retJoins = ['/', name]
             const jobPrefix = _.get(self, 'gConfig.job.prefix');
             
             if (_.isString(jobPrefix)) {
-                if (jobPrefix.endsWith('/')) {
-                    ret = `${jobPrefix}${name}`
+                retJoins = ['/', jobPrefix, name]
+                /*
+                if (_.isEmpty(jobPrefix)) {
+                    console.log('--- job prefix empty string! --');
+                    ret = `/${name}`;
+
+                } else if (jobPrefix.endsWith('/')) {
+                    ret = `${jobPrefix}${name}`;
+
                 } else {
-                    ret = `${jobPrefix}/${name}`
+                    ret = `${jobPrefix}/${name}`;
                 }
+                */
+                // ret = ['/', jobPrefix, name].join('/').split('/').filter((e) => {
+                //     if (e) { return true; } else { return false; }
+                // }).join('/');
+                // ret = '/' + ret;
+                // console.log('a1 -> ', ret);
             }
-            return ret
+            ret = '/' + retJoins.join('/').split('/').filter((e) => {
+                if (e) { return true; } else { return false; }
+            }).join('/');
+
+            console.log('Return Job name: ', ret );
+            return ret;
         }
-    }
-    return self
+    };
+    return self;
 }
 
 /**
@@ -106,22 +128,22 @@ export function findConfig(aScriptPath: string) {
  * @param ms Milliseconds to sleep.
  */
 export async function sleep(ms: number) {
-    await _sleep(ms);
+    await doSleep(ms);
 }
 
 export function isGroovy() {
-    let retVal = false
+    let retVal = false;
     var editor = vscode.window.activeTextEditor;
     if (!editor) { return false; }
     // retVal = ("groovy" === editor.document.languageId);
     retVal = ['groovy', 'json', 'yaml', 'yml'].includes(editor.document.languageId);
-    return retVal
+    return retVal;
 }
 
 export async function showQuicPick(items: any[], ): Promise<void> {
     let qp = vscode.window.createQuickPick();
     qp.items = items;
-    qp.title = ''
+    qp.title = '';
 
 }
 
@@ -136,13 +158,13 @@ export function readjson(path: string): any {
     let json: any;
     try {
         if (path.endsWith('.yaml') || path.endsWith('.yml')) {
-            json  = yaml.safeLoad(fs.readFileSync(path))
+            json  = yaml.safeLoad(fs.readFileSync(path));
         } else {
             raw  = fs.readFileSync(path);
             json = JSON.parse(raw);
         }
     } catch (err) {
-        console.log(err)
+        console.log(err);
         err.message = `Could not parse parameter JSON from ${path}`;
         throw err;
     }
@@ -156,10 +178,10 @@ export function readjson(path: string): any {
  */
 export function writejson(path: string, json: any) {
     if (_.isEmpty(json.params)) {
-        console.log('Skip: WriteJson --> ', json)
-        return
+        console.log('Skip: WriteJson --> ', json);
+        return;
     }
-    console.log('WriteJson --> ', json)
+    console.log('WriteJson --> ', json);
     try {
         let jsonString = JSON.stringify(json, null, 4);
         // fs.writeFileSync(path, jsonString, 'utf8');

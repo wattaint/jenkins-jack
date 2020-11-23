@@ -11,17 +11,17 @@ import { JenkinsHostManager } from './jenkinsHostManager';
 import { SharedLibApiManager, SharedLibVar } from './sharedLibApiManager';
 import { JackBase } from './jack';
 
-const moment = require('moment')
+const moment = require('moment');
 
 const parseXmlString = util.promisify(xml2js.parseString) as any as (xml: string) => any;
 
 const getUpdatedSource = (source: string) => {
-    const txt = 'Updated by Jenkins Jack X'
+    const txt = 'Updated by Jenkins Jack X';
     if (source.indexOf(txt) > -1) {
-        return source
+        return source;
     }
-    return `/* -- ${txt} -- \n Date: ${moment()}\n User: ${JenkinsHostManager.host().username}\n*/\n\n` + source
-}
+    return source + `\n\n\n/* -----------------------\n-- ${txt} -- \n Date: ${moment()}\n User: ${JenkinsHostManager.host().username}\n*/`;
+};
 
 export class PipelineJack extends JackBase {
     private config: any;
@@ -96,30 +96,35 @@ export class PipelineJack extends JackBase {
         }
 
         //let groovyScriptPath = editor.document.uri.fsPath;
-        console.log('[DEBUG] -- 1 -- ', editor.document.uri)
-        console.log('[DEBUG] -- 2 -- ', editor.document.uri.toString())
         const {
             getJobName,
             jobConfig,
             groovyScriptPath,
-        } = findConfig(editor.document.uri.fsPath)
+        } = findConfig(editor.document.uri.fsPath);
         let config = new PipelineConfig(groovyScriptPath);
         // Grab filename to use as the Jenkins job name.
         //var jobName = path.parse(path.basename(editor.document.fileName)).name;
-        var jobName = getJobName(jobConfig.name)
-        console.log('[DEBUG] ' + `job name --> ${jobName}`)
+        var jobName = getJobName(jobConfig.name);
+        // console.log('[DEBUG] ' + `job name --> ${jobName}`);
         // Grab source from active editor.
         //let source = editor.document.getText();
-        let source = fs.readFileSync(groovyScriptPath).toString()
+        let source = fs.readFileSync(groovyScriptPath).toString();
         
         if ("" === source) { return; }
 
         // Build the pipeline.
         try {
-            this.activeJob = await this.build(getUpdatedSource(source), jobName, config);    
+            // console.log('[DEBUG] ------ Try to build -------');
+            const updatedSource = getUpdatedSource(source);
+            // console.log('[DEBUG] jobName: ', jobName);
+            // console.log('[DEBUG]  source: ', updatedSource);
+            // console.log('[DEBUG]  config: ', config);
+            this.activeJob = await this.build(updatedSource, jobName, config);    
+
         } catch (error) {
-            console.log('-x-', error)
-            throw error
+            console.error('[ERROR] ------ Try to build -------');
+            console.log('-x-', error);
+            throw error;
         }
         
         if (undefined === this.activeJob) { return; }
@@ -154,26 +159,26 @@ export class PipelineJack extends JackBase {
 
         // Grab filename to use as (part of) the Jenkins job name.
         let groovyScriptPath = editor.document.uri.fsPath;
-        const isConfig = groovyScriptPath.match(/^.*\/(.*).config.yaml$/)
+        const isConfig = groovyScriptPath.match(/^.*\/(.*).config.yaml$/);
         if (isConfig) {
             const scriptName = isConfig[1];
-            groovyScriptPath =  path.join(path.dirname(groovyScriptPath), `${scriptName}.groovy`)
+            groovyScriptPath =  path.join(path.dirname(groovyScriptPath), `${scriptName}.groovy`);
         }
-        let source = fs.readFileSync(groovyScriptPath).toString()
+        let source = fs.readFileSync(groovyScriptPath).toString();
         
-        let configJson = {name: ''}
+        let configJson = {name: ''};
         if (isConfig) {
             //configJson = readjson(editor.document.uri.fsPath)
-            configJson = yaml.safeLoad(fs.readFileSync(editor.document.uri.fsPath), 'utf-8')
+            configJson = yaml.safeLoad(fs.readFileSync(editor.document.uri.fsPath), 'utf-8');
         } else {
             const groovyFilename = path.basename(groovyScriptPath, '.groovy');
-            const configPath = path.join(path.dirname(groovyScriptPath), `${groovyFilename}.config.yaml`)
+            const configPath = path.join(path.dirname(groovyScriptPath), `${groovyFilename}.config.yaml`);
             // configJson = readjson(configPath)
-            configJson = yaml.safeLoad(fs.readFileSync(configPath), 'utf-8')
+            configJson = yaml.safeLoad(fs.readFileSync(configPath), 'utf-8');
         }
-        var jobName = configJson.name
-        console.log('--groovyScriptPath--> ', groovyScriptPath)
-        console.log('Job nane ---> ', jobName)
+        var jobName = configJson.name;
+        console.log('--groovyScriptPath--> ', groovyScriptPath);
+        console.log('Job nane ---> ', jobName);
         if ("" === source) { return; }
 
         await this.update(getUpdatedSource(source), jobName);
@@ -231,11 +236,20 @@ export class PipelineJack extends JackBase {
         // Inject the provided script/source into the job configuration.
         let parsed = await parseXmlString(xml);
         let root = parsed['flow-definition'];
-        let defClass = root.definition[0]['$'].class
+
+        if (_.isArray(root.definition) && (root.definition.length > 0)) {
+            
+        } else {
+            const message = `This job (${jobName}) already exists, but not found definition. please reconfigure job by add some groovy scripts.`
+            vscode.window.showErrorMessage(message);
+            throw new Error(message);
+        }
+
+        let defClass = root.definition[0]['$'].class;
         if (!['org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition'].includes(defClass)) {
-            root.definition[0]['$'].class = 'org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition'
+            root.definition[0]['$'].class = 'org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition';
             if (root.definition[0]['$'].plugin) {
-                delete root.definition[0]['$'].plugin
+                delete root.definition[0]['$'].plugin;
             }
         }
 
@@ -246,8 +260,8 @@ export class PipelineJack extends JackBase {
         try {
             xml = new xml2js.Builder().buildObject(parsed);    
         } catch (error) {
-            console.log('--err--> ', error)
-            throw error
+            console.log('--err--> ', error);
+            throw error;
         }
         
         if (!job) {
@@ -260,8 +274,8 @@ export class PipelineJack extends JackBase {
                 await JenkinsHostManager.host().client.job.create(jobName, xml);
                 job = await JenkinsHostManager.host().getJob(jobName);    
             } catch (error) {
-                console.error(error)
-                throw error
+                console.error(error);
+                throw error;
             }
             
         }
@@ -275,7 +289,7 @@ export class PipelineJack extends JackBase {
 
     public async showParameterInput(param: any, prefillValue: string) {
         let value: string | undefined;
-        let title = param.name + (param.description != "" ? ` - ${param.description}` : '')
+        let title = param.name + (param.description !== "" ? ` - ${param.description}` : '');
         switch(param._class) {
             case "hudson.model.BooleanParameterDefinition":
                 let result = await vscode.window.showQuickPick([{
@@ -283,9 +297,9 @@ export class PipelineJack extends JackBase {
                         picked: (prefillValue === "true")
                     }], {
                     canPickMany: true
-                })
+                });
                 if (undefined === result) { return undefined; }
-                value = String(result.length === 1)
+                value = String(result.length === 1);
                 break;
             case "hudson.model.ChoiceParameterDefinition":
                 value = await vscode.window.showQuickPick(param.choices, {
@@ -297,7 +311,7 @@ export class PipelineJack extends JackBase {
                 value = await vscode.window.showInputBox({
                     placeHolder: title,
                     value: prefillValue
-                })
+                });
                 break;
         }
         return value;
@@ -348,7 +362,7 @@ export class PipelineJack extends JackBase {
         // for the user to fill values in (updates config param values)
         if (!this.config.params.interactiveInput) { return paramsJson; }
         for (let p of paramProperty.parameterDefinitions) {
-            let title = p.name + (p.description != "" ? ` - ${p.description}` : '')
+            let title = p.name + (p.description !== "" ? ` - ${p.description}` : '');
             let value: string | undefined = "";
 
             if (undefined !== config.interactiveInputOverride &&
@@ -452,7 +466,7 @@ export class PipelineJack extends JackBase {
             progress.report({ increment: 20, message: `Building "${jobName}" #${buildNum}` });
             let buildOptions = params !== undefined ? { name: jobName, parameters: params } : { name: jobName };
             if (_.isEmpty(params)) {
-                buildOptions = { name: jobName }
+                buildOptions = { name: jobName };
             }
             
             try {
@@ -461,7 +475,7 @@ export class PipelineJack extends JackBase {
                     throw err;
                 });
             } catch (err1) {
-                console.log('--err1--', err1)
+                console.log('--err1--', err1);
                 throw err1;
             }
             

@@ -10,3 +10,5 @@ vsc-extension-quickstart.md
 **/*.ts
 *.log
 *.vsix
+.cache
+.cache/**
