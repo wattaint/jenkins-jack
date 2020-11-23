@@ -12,6 +12,7 @@ import { SharedLibApiManager, SharedLibVar } from './sharedLibApiManager';
 import { JackBase } from './jack';
 
 const moment = require('moment');
+const Bluebird = require('bluebird');
 
 const parseXmlString = util.promisify(xml2js.parseString) as any as (xml: string) => any;
 
@@ -268,12 +269,51 @@ export class PipelineJack extends JackBase {
             let r = await this.showInformationModal(
                 `"${jobName}" doesn't exist. Do you want us to create it?`, { title: "Yes"} );
             if (undefined === r) { return undefined; }
+            
+            const folderCheckingMessages: string[] = [];
+            await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: 'Checking job folders.',
+            }, async (progress) => {
+                console.log(`${jobName} doesn't exist. Creating...`);
+                let jobFolderSegments = jobName.split('/').filter((e) => {
+                    if (e) { return true; } else { return false; }
+                });
+                jobFolderSegments = jobFolderSegments.slice(0, jobFolderSegments.length - 1);
+    
+                if (jobFolderSegments.length > 0) {
+                    const results = await Bluebird.map(jobFolderSegments, async (segment: string, idx: number) => {
+                        const folderPath = "/" + jobFolderSegments.slice(0, idx + 1).join('/');
+                        try {
+                            console.log(idx + ') Getting job: ', folderPath);
+                            progress.report({ message: `${idx}/${jobFolderSegments.length}) Checking: ${folderPath}` });
+                            const job = await JenkinsHostManager.host().getJob(folderPath);
+                            return { folderPath, job };
+                        } catch (error) {
+                            console.log('--e--', error);
+                            return { folderPath, job: null };
+                        }
+                    });
+                    let count = 0;
+                    results.map(({ folderPath, job }: { folderPath: string, job: object }) => {
+                        if (_.isEmpty(job)) {
+                            count += 1;
+                            folderCheckingMessages.push(`${count}) ${folderPath}`);
+                        }
+                    });
+                }
+            });
 
-            console.log(`${jobName} doesn't exist. Creating...`);
+            if (folderCheckingMessages.length > 0) {
+                const m = ["Unable to create a Job, Please manually create these folder!\n", folderCheckingMessages.join("\n")];
+                return vscode.window.showErrorMessage(m.join("\n"), { modal: true });
+            }
+
             try {
                 await JenkinsHostManager.host().client.job.create(jobName, xml);
                 job = await JenkinsHostManager.host().getJob(jobName);    
             } catch (error) {
+                console.error('===== Job creating error ======')
                 console.error(error);
                 throw error;
             }
